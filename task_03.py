@@ -7,3 +7,21 @@
 # очередного элемента необходимо реализовать проверку типа элемента и вносить его в список, только если введено число.
 # Класс-исключение должен не позволить пользователю ввести текст (не число) и отобразить соответствующее сообщение.
 # При этом работа скрипта не должна завершаться.
+class NumberCheck(Exception):
+    def __init__(self, txt):
+        self.txt = txt
+
+
+number_list = []
+while True:
+    try:
+        inp_number = input('Введите число ')
+        if inp_number == 'stop':
+            break
+        elif inp_number.isalpha():
+            raise NumberCheck('Не число')
+    except NumberCheck as err:
+        print(err)
+    else:
+        number_list.append(int(inp_number))
+print(number_list)
