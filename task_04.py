@@ -2,7 +2,15 @@
 # который будет базовым для классов-наследников. Эти классы — конкретные типы оргтехники (принтер, сканер, ксерокс).
 # В базовом классе определить параметры, общие для приведенных типов. В классах-наследниках реализовать параметры,
 # уникальные для каждого типа оргтехники.
+from abc import ABC, abstractmethod
+
+
 class NumberCheck(Exception):
+    def __init__(self, txt):
+        self.txt = txt
+
+
+class StrCheck(Exception):
     def __init__(self, txt):
         self.txt = txt
 
@@ -10,34 +18,41 @@ class NumberCheck(Exception):
 class Warehouse:
     def __init__(self, warehouse_volume):
         self.warehouse_volume = warehouse_volume
+        if type(warehouse_volume) != int and type(warehouse_volume) != float:
+            raise NumberCheck('Введите число')
         self.warehouse_items = []
         self.remaining_volume = warehouse_volume
 
-    def add_equipment(self, item_name, amount, unit_volume):
-        self.warehouse_items.append(OfficeEquipment(item_name, amount, unit_volume))
-        self.remaining_volume -= OfficeEquipment(item_name, amount, unit_volume).items_volume
+    def add_equipment(self, equipment):
+        self.warehouse_items.append(equipment)
+        self.remaining_volume -= equipment.items_volume
         if self.remaining_volume < 0:
             self.warehouse_items.pop()
-            self.remaining_volume += OfficeEquipment(item_name, amount, unit_volume).items_volume
+            self.remaining_volume += equipment.items_volume
             print(f'Склад полон. Товар не принят. Осталось {self.remaining_volume} места для хранения.')
         elif self.remaining_volume < 0.1 * self.warehouse_volume:
-            print(f'Место на складе заканчивается. {OfficeEquipment(item_name, amount, unit_volume)} принят на склад.\n'
+            print(f'Место на складе заканчивается. {equipment} принят на склад.\n'
                   f'Осталось {self.remaining_volume} места для хранения.\n')
         else:
-            print(f'{OfficeEquipment(item_name, amount, unit_volume)} принят на склад.\n'
+            print(f'{equipment} принят на склад.\n'
                   f'Осталось {self.remaining_volume} места для хранения.\n')
 
     def remove_equipment(self, destination, item_name, amount):
         for el in self.warehouse_items:
-            # print(el)
             if item_name in el.values():
                 el['Количество устройств'] -= amount
                 if el['Количество устройств'] == 0:
                     self.warehouse_items.remove(el)
+                    print(f'{amount} {el.discr().lower()}ов {item_name} переданы в подразделение {destination}')
                 elif el['Количество устройств'] < 0:
                     print('Недостаточно товара на складе.')
-                self.remaining_volume -= el['Количество устройств'] * el['Объем устройства']
-                print(f'{amount} {item_name} переданы в подразделение {destination}')
+                    el['Количество устройств'] += amount
+                elif el['Количество устройств'] > 0:
+                    self.remaining_volume -= el['Количество устройств'] * el['Объем устройства']
+                    print(f'{amount} {el.discr().lower()}ов {item_name} переданы в подразделение {destination}')
+                else:
+                    print('Что то не так')
+                break
 
     def inventory_check(self):
         print('\nИнвентаризация')
@@ -48,9 +63,11 @@ class Warehouse:
         print(f'Объем техники {equipment_volume}\n')
 
 
-class OfficeEquipment:
+class OfficeEquipment(ABC):
     def __init__(self, item_name, amount, unit_volume):
         self.item_name = item_name
+        if type(item_name) != str:
+            raise StrCheck('Введите название устройства')
         self.amount = amount
         if type(amount) != int:
             raise NumberCheck('Введите число')
@@ -77,30 +94,43 @@ class OfficeEquipment:
     def __getitem__(self, key):
         return self.item_dict[key]
 
+    @abstractmethod
+    def discr(self):
+        return ' '
+
 
 class Printer(OfficeEquipment):
     def action(self):
         return 'Печать'
+
+    def discr(self):
+        return 'Принтер'
 
 
 class Scanner(OfficeEquipment):
     def action(self):
         return 'Скан'
 
+    def discr(self):
+        return 'Сканер'
+
 
 class CopyMachine(OfficeEquipment):
     def action(self):
         return 'Копия'
+
+    def discr(self):
+        return 'Копир'
 
 
 wh = Warehouse(500)
 pr = Printer('HP', 500, 0.03)
 sc = Scanner('Canon', 1000, 0.01)
 cm = CopyMachine('Kyocera', 800, 0.2)
-wh.add_equipment(pr.item_name, pr.amount, pr.unit_volume)
-wh.add_equipment(sc.item_name, sc.amount, sc.unit_volume)
+wh.add_equipment(pr)
+wh.add_equipment(sc)
 wh.inventory_check()
-wh.add_equipment(cm.item_name, cm.amount, cm.unit_volume)
+wh.add_equipment(cm)
 wh.inventory_check()
-wh.remove_equipment('Офис 101', 'Canon', 100)
+wh.remove_equipment('Офис 101', 'Canon', 1000)
 wh.inventory_check()

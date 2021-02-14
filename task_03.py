@@ -25,3 +25,4 @@ while True:
     else:
         number_list.append(int(inp_number))
 print(number_list)
+
